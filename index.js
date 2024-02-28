@@ -7,7 +7,7 @@ jsonwebtoken = require("jsonwebtoken");
 const userRoutes = require('./router/userRoute');
 
 app.use(express.json());
-app.use('/api/users', userRoutes); // Assuming you want your routes to be under '/api/users'
+app.use('/api/users', userRoutes); 
 
 app.listen(3001, () => {
     console.log('Server is running on http://localhost:3001');
