@@ -33,4 +33,66 @@ router.post('/register', async (req, res) => {
     }
   });
 
+ router.post('/login', async (req, res) => {
+    try {
+      const { username, email, password } = req.body;
+  
+      // Check if the user exists
+      const user = await User.findOne({ $or: [{ username }, { email }] });
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+  
+      // Check if the provided password is correct
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
+  
+      // Generate a token
+      const token = jwt.sign({ userId: user._id }, 'yourSecretKey', { expiresIn: '1h' });
+  
+      res.status(200).json({ token });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+
+  router.post('/change-password', async (req, res) => {
+    try {
+      const { username, password, newPassword, token } = req.body;
+  
+      // Verify the token
+      const decodedToken = jwt.verify(token, 'yourSecretKey');
+  
+      // Find the user by the decoded user ID
+      const user = await User.findById(decodedToken.userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      // Check if the provided password is correct
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
+  
+      // Hash the new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+  
+      // Update the user's password
+      user.password = hashedNewPassword;
+      await user.save();
+  
+      res.status(200).json({ message: 'Password changed successfully' });
+    } catch (error) {
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
 module.exports = router;
